@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRAVITY</title>
+
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="apple-touch-icon-180x180.png" sizes="180x180">
+    <link rel="icon" type="image/png" href="android-chrome-192x192.png" sizes="192x192">
+
+
+
+    <link rel="stylesheet" href="css/soundspring.css">
+
+    <!-- jQueryのcdn -->
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <!-- Matter.jsのcdn -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js" integrity="sha512-0z8URjGET6GWnS1xcgiLBZBzoaS8BNlKayfZyQNKz4IRp+s7CKXx0yz7Eco2+TcwoeMBa5KMwmTX7Kus7Fa5Uw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <style>
+        /* spring.css */
+
+body {
+    margin: 0;
+    overflow: hidden;
+}
+
+.Sun, .Earth, .Mars, .Jupiter, .Saturn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    background-color: black;
+    width: 75px;
+    height: 75px;
+    z-index: 2;
+}
+
+button{
+    border: 2px solid #000;
+    border-radius: 0;
+    background: #fff;
+}
+
+button:hover {
+    color: #000;
+    background: #000;
+}
+
+.Sun img, .Earth img, .Mars img, .Jupiter img, .Saturn img {
+    width: 100%; /* 画像が親要素に対して100%の幅を取るようにする */
+    height: auto; /* アスペクト比を保ちながら高さを自動調整 */
+}
+
+.Sun { top: 50px; left: 100px; }
+.Earth { top: 150px; left: 100px; }
+.Mars { top: 250px; left: 100px; }
+.Jupiter { top: 350px; left: 100px; }
+.Saturn { top: 450px; left: 100px; }
+
+#content-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+}
+
+    </style>
+</head>
+<body>
+    <button class="Sun">
+        <img src="https://github.com/camen89/GRAVITY/blob/main/%E5%A4%AA%E9%99%BD_%E9%80%8F%E9%81%8E.png?raw=true" alt=""  width="75px" height="75px">
+    </button>
+
+    <button class="Earth">
+        <img src="https://github.com/camen89/GRAVITY/blob/main/%E5%9C%B0%E7%90%83_%E9%80%8F%E9%81%8E.png?raw=true" alt=""  width="70px" height="70px">
+    </button>
+
+    <button class="Mars">
+        <img src="https://github.com/camen89/GRAVITY/blob/main/%E7%81%AB%E6%98%9F_%E9%80%8F%E9%81%8E.png?raw=true" alt=""  width="70px" height="70px">
+    </button>
+
+    <button class="Jupiter">
+        <img src="https://github.com/camen89/GRAVITY/blob/main/%E6%9C%A8%E6%98%9F_%E9%80%8F%E9%81%8E.png?raw=true" alt=""  width="70px" height="70px">
+    </button>
+
+    <button class="Saturn">
+        <img src="https://github.com/camen89/GRAVITY/blob/main/%E5%9C%9F%E6%98%9F_%E9%80%8F%E9%81%8E.png?raw=true" alt="" width="70px" height="70px">
+    </button>
+
+    <div id="content-container"></div>
+    
+
+    <script src="js/soundspring.js"></script>
+    <script>
+        $(document).ready(function () {
+    let Engine = Matter.Engine,
+        Render = Matter.Render,
+        World = Matter.World,
+        Bodies = Matter.Bodies,
+        Constraint = Matter.Constraint,
+        Mouse = Matter.Mouse,
+        MouseConstraint = Matter.MouseConstraint;
+
+    // Matter.jsエンジンの作成
+    let engine = Engine.create();
+
+    // Matter.jsレンダラの作成
+    let render = Render.create({
+        element: document.getElementById('content-container'),
+        engine: engine,
+        options: {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            wireframes: false,
+            background: 'black'
+        }
+    });
+
+    
+
+    let gravityMap = 10;
+
+    engine.world.gravity.y = 0.9807 * gravityMap;    // 重力加速度の設定
+
+    // Matter.jsワールドに境界を追加
+    let borderOptions = {
+        isStatic: true,     //静的
+        render: { fillStyle: '#1b244a' }
+    };
+    World.add(engine.world, [
+        Bodies.rectangle(0, 0, window.innerWidth * 2, 50, borderOptions),
+        Bodies.rectangle(0, window.innerHeight, window.innerWidth * 2, 50, borderOptions),
+
+        Bodies.rectangle(0, 0, 50, window.innerWidth * 2, borderOptions),
+        Bodies.rectangle(window.innerWidth * 5 / 5, 0, 50, window.innerHeight * 2, borderOptions),
+    ]);
+
+    // Matter.jsワールドにボールとばねを追加
+    let ball = Bodies.circle(window.innerWidth / 2, 200, 20, {
+        restitution: 0.8,     //反発係数
+        frictionAir: 0,     //空気抵抗
+        render: {
+            sprite: {
+                texture: 'https://github.com/camen89/GRAVITY/blob/main/%E3%83%AA%E3%83%B3%E3%82%B4.png?raw=true' // 画像のパスを指定してください
+            }
+        }
+    });
+
+    let spring = Constraint.create({
+        pointA: { x: window.innerWidth / 2, y: 100 },
+        bodyB: ball,
+        stiffness: 0.05,    // 拘束の剛性
+        damping: 0.02       // 振動の減衰
+    });
+
+    spring.collisionFilter = {
+        category: 0x0002,
+        mask: 0x0002
+    };
+
+    World.add(engine.world, [ball, spring]);
+
+    // 背景に星を散らす
+function createStars() {
+    const starDensity = 0.001; // 星の密度
+    const numStars = Math.floor(window.innerWidth * window.innerHeight * starDensity);
+
+    for (let i = 0; i < numStars; i++) {
+        const x = Math.random() * window.innerWidth;
+        const y = Math.random() * window.innerHeight;
+
+        if(x > 50 && x < window.innerWidth - 50 && y > 50 && y < window.innerHeight - 50){
+            const star = Bodies.circle(x, y, 1, {
+                isStatic: true,
+                collisionFilter: {
+                    category: 0x0002,
+                    mask: 0x0002
+                },
+                render: {
+                    fillStyle: 'white' // 星の色
+                }
+
+                
+            });
+            World.add(engine.world, star);
+        }
+    }
+}
+
+// 星を生成
+createStars();
+
+    // Matter.jsワールドにマウス拘束を追加
+    let mouse = Mouse.create(render.canvas),
+        mouseConstraint = MouseConstraint.create(engine, {
+            mouse: mouse,
+            constraint: {
+                stiffness: 0.5,     //拘束の剛性
+                render: { visible: false }
+            }
+        });
+
+    World.add(engine.world, mouseConstraint);
+
+    // レンダラにマウスを設定
+    render.mouse = mouse;
+
+    // Matter.jsエンジンとレンダラの実行
+    Engine.run(engine);
+    Render.run(render);
+
+    let isAudioContextInitialized = false;
+
+    // ユーザージェスチャーのためのイベントリスナー
+    $(document).on('click', function () {
+        // オーディオコンテキストを一度だけ初期化
+        if (!isAudioContextInitialized) {
+            // Web Audio API
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const audioElement = new Audio();
+            const audioSource = audioContext.createMediaElementSource(audioElement);
+            const gainNode = audioContext.createGain();
+            audioSource.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            // サーバー上の音声ファイルにアクセスするリンクを設定
+            audioElement.src = 'ピー音.mp3';
+
+            let isAudioPlaying = false;
+
+            // Event listener for spring movement
+            Matter.Events.on(engine, 'afterUpdate', function () {
+                const velocity = spring.bodyB.velocity;
+
+                // Calculate the speed magnitude
+                const speed = Math.sqrt(velocity.x ** 2 + velocity.y ** 2);
+
+                // Check if the ball is at rest
+                if (speed < 0.1) {
+                    // Pause audio if playing
+                    if (isAudioPlaying) {
+                        audioElement.pause();
+                        audioElement.currentTime = 0;
+                        isAudioPlaying = false;
+                    }
+                } else {
+                    // Adjust audio volume based on speed
+                    const volume = mapRange(speed, 0, 10, 0, 10);
+                    gainNode.gain.value = volume;
+
+                    // Play audio only if not already playing
+                    if (!isAudioPlaying) {
+                        // Adjust frequency based on speed
+                        const frequency = mapRange(speed, 0, 10, 200, 1000);
+
+                        // Check if frequency is a finite number
+                        if (isFinite(frequency)) {
+                            audioContext.resume().then(() => {
+                                audioElement.play();
+                                audioElement.currentTime = 0;
+
+                                // Set playbackRate only if frequency is finite
+                                audioElement.playbackRate = frequency / 440; // Assuming 440 Hz as the base frequency
+                            });
+                            isAudioPlaying = true;
+                        }
+                    }
+                }
+            });
+
+            isAudioContextInitialized = true;
+
+            // .Sunボタンがクリックされたときに重力を27.4に変更
+            $('.Sun').on('click', function () {
+                engine.world.gravity.y = 27.4 * gravityMap;
+            });
+
+            $('.Earth').on('click', function (){
+                engine.world.gravity.y = 0.98 * gravityMap;
+            });
+
+            $('.Mars').on('click', function (){
+                engine.world.gravity.y = 0.371 * gravityMap;
+            });
+
+            $('.Jupiter').on('click', function (){
+                engine.world.gravity.y = 2.479 * gravityMap;
+            });
+
+            $('.Saturn').on('click', function (){
+                engine.world.gravity.y = 1.044 * gravityMap;
+            });
+        }
+    });
+
+    // Helper function to map a value from one range to another
+    function mapRange(value, inMin, inMax, outMin, outMax) {
+        return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+    }
+});
+
+
+    </script>
+</body>
+</html>
